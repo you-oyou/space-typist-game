@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星際航行：打字救地球 (Space Typist)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0b0b16;
+            color: #00ffcc;
+            font-family: 'Press Start 2P', monospace, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 星空背景特效 */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        /* 遊戲主容器 */
+        #game-container {
+            width: 900px;
+            height: 600px;
+            background: rgba(10, 10, 26, 0.85);
+            border: 4px solid #00ffcc;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5), inset 0 0 20px rgba(0, 255, 204, 0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        /* 頂部狀態列 */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #ff00ff;
+            text-shadow: 2px 2px #330033;
+            border-bottom: 2px dashed #00ffcc;
+            padding-bottom: 10px;
+        }
+
+        .hud span {
+            color: #00ffcc;
+        }
+
+        /* 關卡與訊息看板 */
+        .message-banner {
+            text-align: center;
+            font-size: 16px;
+            color: #ffff00;
+            text-shadow: 2px 2px #666600;
+            margin: 5px 0;
+            min-height: 25px;
+        }
+
+        /* 遊戲戰鬥區 */
+        .battle-area {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 隕石 / 目標單字 */
+        .target-word-container {
+            position: absolute;
+            top: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: top 0.1s linear;
+        }
+
+        .meteor-graphic {
+            font-size: 40px;
+            margin-bottom: 5px;
+            animation: float 2s infinite alternate ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-8px) rotate(3deg); }
+        }
+
+        .word-box {
+            font-size: 22px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 14px;
+            border: 2px solid #ff5555;
+            border-radius: 4px;
+            letter-spacing: 2px;
+            box-shadow: 0 0 10px rgba(255, 85, 85, 0.5);
+        }
+
+        .letter-matched {
+            color: #00ff00;
+            text-shadow: 0 0 8px #00ff00;
+        }
+
+        .letter-unmatched {
+            color: #ffffff;
+        }
+
+        /* 太空船與雷射 */
+        .spaceship-area {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .spaceship {
+            font-size: 48px;
+            filter: drop-shadow(0 0 10px #00ffcc);
+        }
+
+        /* 雷射光束 */
+        .laser {
+            position: absolute;
+            bottom: 60px;
+            width: 4px;
+            background: #00ffcc;
+            box-shadow: 0 0 12px #00ffcc, 0 0 20px #ffffff;
+            display: none;
+            z-index: 10;
+        }
+
+        /* 爆炸特效 */
+        .explosion {
+            position: absolute;
+            font-size: 48px;
+            display: none;
+            z-index: 15;
+            animation: explode 0.4s forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        /* 底部打字輸入區 */
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-top: 2px dashed #00ffcc;
+            padding-top: 15px;
+        }
+
+        #type-input {
+            width: 100%;
+            max-width: 500px;
+            background: #000;
+            border: 3px solid #00ffcc;
+            color: #00ffcc;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 18px;
+            padding: 12px;
+            text-align: center;
+            outline: none;
+            border-radius: 6px;
+            box-shadow: inset 0 0 10px rgba(0, 255, 204, 0.3);
+        }
+
+        #type-input:focus {
+            border-color: #ff00ff;
+            box-shadow: inset 0 0 15px rgba(255, 0, 255, 0.4);
+        }
+
+        .keyboard-hint {
+            margin-top: 8px;
+            font-size: 9px;
+            color: #8888aa;
+        }
+
+        /* 畫面覆蓋層 (開始/結算/通關) */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 15, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .overlay h1 {
+            font-size: 26px;
+            color: #00ffcc;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px #ff00ff;
+            line-height: 1.5;
+        }
+
+        .overlay p {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 25px;
+            line-height: 1.8;
+            max-width: 600px;
+        }
+
+        .btn {
+            background: #ff00ff;
+            color: #fff;
+            border: none;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            padding: 14px 28px;
+            cursor: pointer;
+            border-radius: 6px;
+            box-shadow: 0 4px 0 #990099;
+            transition: all 0.1s ease;
+        }
+
+        .btn:hover {
+            background: #ff44ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #990099;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #990099;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stars" id="starfield"></div>
+
+    <div id="game-container">
+        <!-- 頂部狀態列 -->
+        <div class="hud">
+            <div>WPM: <span id="wpm-display">0</span></div>
+            <div>ACC: <span id="acc-display">100</span>%</div>
+            <div>LIVES: <span id="lives-display">❤️❤️❤️</span></div>
+            <div>SCORE: <span id="score-display">0</span></div>
+            <div>STAGE: <span id="stage-display">1/5</span></div>
+        </div>
+
+        <!-- 訊息看板 -->
+        <div class="message-banner" id="message-banner">請準備：輸入下方單字發射雷射！</div>
+
+        <!-- 遊戲戰鬥區 -->
+        <div class="battle-area" id="battle-area">
+            <div class="target-word-container" id="target-container">
+                <div class="meteor-graphic" id="meteor-icon">☄️</div>
+                <div class="word-box" id="word-box">READY</div>
+            </div>
+
+            <!-- 雷射與爆炸 -->
+            <div class="laser" id="laser-beam"></div>
+            <div class="explosion" id="explosion-effect">💥</div>
+
+            <!-- 太空船 -->
+            <div class="spaceship-area">
+                <div class="spaceship">🚀</div>
+            </div>
+        </div>
+
+        <!-- 底部打字輸入區 -->
+        <div class="input-area">
+            <input type="text" id="type-input" placeholder="在此輸入單字..." autocomplete="off" spellcheck="false" disabled>
+            <div class="keyboard-hint">提示：精準度達到 90% 以上且擊破目標即可通關當前階段！</div>
+        </div>
+
+        <!-- 開始畫面覆蓋層 -->
+        <div class="overlay" id="start-overlay">
+            <h1>🚀 星際航行：打字救地球</h1>
+            <p>歡迎來到五階段打字特訓！<br>透過正確輸入單字發射雷射擊碎隕石。<br>完成 5 個關卡考驗，拯救宇宙！</p>
+            <button class="btn" onclick="startGame()">開始任務</button>
+        </div>
+
+        <!-- 關卡完成覆蓋層 -->
+        <div class="overlay hidden" id="clear-overlay">
+            <h1 id="clear-title">LEVEL CLEAR!</h1>
+            <p id="clear-stats">表現優秀！準備進入下一關。</p>
+            <button class="btn" id="next-stage-btn" onclick="nextStage()">進入下一關</button>
+        </div>
+
+        <!-- 遊戲結束覆蓋層 -->
+        <div class="overlay hidden" id="gameover-overlay">
+            <h1 style="color: #ff5555;">GAME OVER</h1>
+            <p>太空船防護罩失效！請再接再厲。</p>
+            <button class="btn" onclick="restartGame()">重新挑戰</button>
+        </div>
+    </div>
+
+    <script>
+        // 生成背景星星
+        const starfield = document.getElementById('starfield');
+        for (let i = 0; i < 60; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.width = Math.random() * 3 + 'px';
+            star.style.height = star.style.width;
+            star.style.top = Math.random() * 100 + '%';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.animationDuration = (Math.random() * 2 + 1) + 's';
+            star.style.animationDelay = Math.random() * 2 + 's';
+            starfield.appendChild(star);
+        }
+
+        // 遊戲階段設定與單字庫
+        const stagesData = [
+            { id: 1, name: "第一關：基準鍵基地訓練", words: ["asdf", "jkl;", "sad", "lad", "all", "dad", "fall", "flask"], speed: 1.2, targetCount: 5 },
+            { id: 2, name: "第二關：小行星帶高頻單字", words: ["space", "meteor", "planet", "galaxy", "orbit", "comet", "rocket", "stellar"], speed: 1.5, targetCount: 6 },
+            { id: 3, name: "第三關：大氣層日常短句", words: ["space flight", "rocket launch", "save earth", "star cruiser", "meteor storm", "speed warp"], speed: 1.8, targetCount: 6 },
+            { id: 4, name: "第四關：光速極限挑戰", words: ["hyperspace", "gravitational", "supernova", "interstellar", "asteroid belt", "cosmos explorer"], speed: 2.3, targetCount: 7 },
+            { id: 5, name: "第五關：宇宙總決戰 (魔王)", words: ["destroy the dark nebula", "save the galaxy now", "ultimate typing warrior", "quantum hyper drive"], speed: 2.8, targetCount: 8 }
+        ];
+
+        let currentStageIndex = 0;
+        let score = 0;
+        let lives = 3;
+        let wordsDestroyed = 0;
+        let currentWord = "";
+        let typedChars = 0;
+        let correctChars = 0;
+        let gameActive = false;
+        let startTime = 0;
+        let targetTop = 20;
+        let animationFrameId = null;
+
+        // DOM 元素
+        const wpmDisplay = document.getElementById('wpm-display');
+        const accDisplay = document.getElementById('acc-display');
+        const livesDisplay = document.getElementById('lives-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const stageDisplay = document.getElementById('stage-display');
+        const messageBanner = document.getElementById('message-banner');
+        const wordBox = document.getElementById('word-box');
+        const targetContainer = document.getElementById('target-container');
+        const typeInput = document.getElementById('type-input');
+        const laserBeam = document.getElementById('laser-beam');
+        const explosionEffect = document.getElementById('explosion-effect');
+        
+        const startOverlay = document.getElementById('start-overlay');
+        const clearOverlay = document.getElementById('clear-overlay');
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+        const clearTitle = document.getElementById('clear-title');
+        const clearStats = document.getElementById('clear-stats');
+
+        function startGame() {
+            startOverlay.classList.add('hidden');
+            currentStageIndex = 0;
+            score = 0;
+            lives = 3;
+            initStage();
+        }
+
+        function initStage() {
+            wordsDestroyed = 0;
+            gameActive = true;
+            startTime = Date.now();
+            typeInput.disabled = false;
+            typeInput.value = "";
+            typeInput.focus();
+            
+            stageDisplay.textContent = `${currentStageIndex + 1}/5`;
+            messageBanner.textContent = stagesData[currentStageIndex].name;
+            updateHUD();
+            spawnNewWord();
+            gameLoop();
+        }
+
+        function spawnNewWord() {
+            const wordList = stagesData[currentStageIndex].words;
+            currentWord = wordList[Math.floor(Math.random() * wordList.length)];
+            targetTop = 20;
+            targetContainer.style.top = targetTop + 'px';
+            renderWordBox("");
+        }
+
+        function renderWordBox(inputStr) {
+            let html = "";
+            for (let i = 0; i < currentWord.length; i++) {
+                if (i < inputStr.length) {
+                    if (inputStr[i] === currentWord[i]) {
+                        html += `<span class="letter-matched">${currentWord[i]}</span>`;
+                    } else {
+                        html += `<span style="color: #ff5555; text-shadow: 0 0 8px #ff5555;">${currentWord[i]}</span>`;
+                    }
+                } else {
+                    html += `<span class="letter-unmatched">${currentWord[i]}</span>`;
+                }
+            }
+            wordBox.innerHTML = html;
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // 隕石向下移動
+            const stageSpeed = stagesData[currentStageIndex].speed;
+            targetTop += stageSpeed * 0.35;
+            targetContainer.style.top = targetTop + 'px';
+
+            // 若隕石到底防護罩受損
+            if (targetTop > 380) {
+                lives--;
+                updateHUD();
+                triggerExplosion(targetContainer.offsetLeft + 50, 400, true);
+                if (lives <= 0) {
+                    gameOver();
+                    return;
+                }
+                spawnNewWord();
+            }
+
+            updateStats();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        typeInput.addEventListener('input', (e) => {
+            if (!gameActive) return;
+            const val = typeInput.value;
+            typedChars++;
+
+            // 檢查是否完全符合
+            if (val === currentWord) {
+                correctChars += currentWord.length;
+                score += currentWord.length * 20 * (currentStageIndex + 1);
+                wordsDestroyed++;
+                updateHUD();
+                
+                // 觸發雷射動畫與擊破
+                fireLaserAndExplode();
+
+                if (wordsDestroyed >= stagesData[currentStageIndex].targetCount) {
+                    stageClear();
+                } else {
+                    typeInput.value = "";
+                    spawnNewWord();
+                }
+            } else {
+                // 即時比對高亮
+                renderWordBox(val);
+                if (currentWord.startsWith(val)) {
+                    correctChars++;
+                }
+            }
+        });
+
+        function fireLaserAndExplode() {
+            // 顯示雷射
+            laserBeam.style.display = 'block';
+            setTimeout(() => { laserBeam.style.display = 'none'; }, 150);
+
+            // 顯示爆炸
+            const containerRect = targetContainer.getBoundingClientRect();
+            const battleRect = document.getElementById('battle-area').getBoundingClientRect();
+            explosionEffect.style.left = (containerRect.left - battleRect.left + 20) + 'px';
+            explosionEffect.style.top = (containerRect.top - battleRect.top) + 'px';
+            explosionEffect.style.display = 'block';
+            setTimeout(() => { explosionEffect.style.display = 'none'; }, 400);
+        }
+
+        function triggerExplosion(x, y, isBottom) {
+            explosionEffect.style.left = '400px';
+            explosionEffect.style.top = isBottom ? '380px' : '200px';
+            explosionEffect.style.display = 'block';
+            setTimeout(() => { explosionEffect.style.display = 'none'; }, 400);
+        }
+
+        function updateStats() {
+            const elapsedMinutes = (Date.now() - startTime) / 60000;
+            const wpm = elapsedMinutes > 0 ? Math.round((correctChars / 5) / elapsedMinutes) : 0;
+            wpmDisplay.textContent = wpm > 0 ? wpm : 0;
+
+            const acc = typedChars > 0 ? Math.round((correctChars / typedChars) * 100) : 100;
+            accDisplay.textContent = Math.min(100, Math.max(0, acc));
+        }
+
+        function updateHUD() {
+            livesDisplay.textContent = '❤️'.repeat(Math.max(0, lives));
+            scoreDisplay.textContent = score;
+        }
+
+        function stageClear() {
+            gameActive = false;
+            cancelAnimationFrame(animationFrameId);
+            typeInput.disabled = true;
+
+            clearTitle.textContent = `LEVEL ${currentStageIndex + 1} CLEAR!`;
+            clearStats.textContent = `得分: ${score} | 準確率: ${accDisplay.textContent}% | WPM: ${wpmDisplay.textContent}`;
+            
+            const nextBtn = document.getElementById('next-stage-btn');
+            if (currentStageIndex >= stagesData.length - 1) {
+                clearTitle.textContent = "🏆 恭喜通關所有關卡！";
+                clearStats.textContent = `最終總得分: ${score} - 你已成為銀河傳奇打字大師！`;
+                nextBtn.textContent = "重新開始冒險";
+            } else {
+                nextBtn.textContent = "進入下一關";
+            }
+
+            clearOverlay.classList.remove('hidden');
+        }
+
+        function nextStage() {
+            clearOverlay.classList.add('hidden');
+            currentStageIndex++;
+            if (currentStageIndex >= stagesData.length) {
+                startGame();
+            } else {
+                initStage();
+            }
+        }
+
+        function gameOver() {
+            gameActive = false;
+            cancelAnimationFrame(animationFrameId);
+            typeInput.disabled = true;
+            gameoverOverlay.classList.remove('hidden');
+        }
+
+        function restartGame() {
+            gameoverOverlay.classList.add('hidden');
+            startGame();
+        }
+    </script>
+</body>
+</html>
